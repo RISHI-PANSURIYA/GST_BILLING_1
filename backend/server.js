@@ -1,6 +1,7 @@
 const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
+const path = require("node:path");
 
 const connectDB = require("./config/db");
 const userRoutes = require("./routes/UserRoutes");
@@ -13,24 +14,42 @@ const invoiceRoutes = require("./routes/InvoiceRoutes");
 dotenv.config();
 
 const app = express();
+const frontendDist = path.resolve(__dirname, "../frontend/dist");
+const frontendIndex = path.join(frontendDist, "index.html");
 
 app.use(cors());
 app.use(express.json());
 
-connectDB();
-
+app.get("/healthz", (_req, res) => {
+    res.status(200).json({ status: "ok" });
+});
 
 app.use("/api/users", userRoutes);
 app.use("/api/gsts", gstRoutes);
 app.use("/api/customers", customerRoutes);
-app.use("/api/products",productRoutes);
-app.use("/api/payments",paymentRoutes);
-app.use("/api/invoices",invoiceRoutes);
+app.use("/api/products", productRoutes);
+app.use("/api/payments", paymentRoutes);
+app.use("/api/invoices", invoiceRoutes);
+
+app.use(express.static(frontendDist));
+app.use((req, res, next) => {
+    if (req.path === "/api" || req.path.startsWith("/api/")) {
+        return res.status(404).json({ message: "API route not found" });
+    }
+
+    if (req.method === "GET") {
+        return res.sendFile(frontendIndex, (error) => {
+            if (error) next(error);
+        });
+    }
+
+    return next();
+});
+
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    app.get("/", (req, res) => {
-    res.send("Server is running");
-});
+connectDB().then(() => {
+    app.listen(PORT, "0.0.0.0", () => {
+        console.log(`Server running on port ${PORT}`);
+    });
 });
