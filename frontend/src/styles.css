@@ -115,6 +115,7 @@ button.primary-button { cursor: pointer; }
 .invoice-items-heading h3 { margin: 0; color: #26362d; font-size: 13px; }
 .invoice-items-heading p { margin: 5px 0 0; color: #849088; font-size: 10px; }
 .invoice-item-list { display: grid; gap: 10px; }
+.invoice-item-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
 .invoice-item-row { display: grid; grid-template-columns: minmax(200px, 1.4fr) 82px minmax(130px, .7fr) 30px; align-items: end; gap: 11px; padding: 12px; border: 1px solid #edf0ed; border-radius: 5px; background: #fbfcfb; }
 .quantity-field > input { width: 100%; height: 40px; padding: 0 8px; border: 1px solid #dfe6e0; border-radius: 4px; outline: 0; color: var(--ink); background: #fff; font-size: 12px; }
 .quantity-field > input:focus { border-color: #6da387; }
@@ -133,6 +134,10 @@ button.primary-button { cursor: pointer; }
 .invoice-total-block .invoice-grand-total { padding-top: 10px; border-top: 1px solid #dfe7e0; color: #293b30; font-size: 13px; font-weight: 600; }
 .invoice-total-block .invoice-grand-total strong { font-size: 15px; }
 .invoice-form-state { margin: 20px 0; padding: 18px; border-radius: 5px; color: #647168; background: #f5f8f5; font-size: 12px; line-height: 1.5; }
+.invoice-form-state p { margin: 0; }
+.invoice-setup-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.invoice-setup-actions button { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 9px; border: 1px solid #b8cdbd; border-radius: 4px; color: #176b4d; background: #fff; font-size: 11px; font-weight: 600; cursor: pointer; }
+.invoice-setup-actions button:hover { background: #edf4ef; }
 .invoice-modal-footer { display: flex; justify-content: flex-end; gap: 9px; padding-top: 15px; border-top: 1px solid var(--line); }
 .secondary-button { min-height: 39px; padding: 0 13px; border: 1px solid #dfe6e0; border-radius: 4px; color: #59665e; background: white; font-size: 11px; font-weight: 600; cursor: pointer; }
 .secondary-button:hover { background: #f7f9f7; }

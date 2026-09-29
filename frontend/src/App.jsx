@@ -7,6 +7,7 @@ import {
   CalendarDays,
   Building2,
   ChevronDown,
+  Download,
   FilePlus2,
   FileText,
   LayoutDashboard,
@@ -24,7 +25,7 @@ import {
   X,
 } from "lucide-react";
 import CustomerPage from "./CustomerPage.jsx";
-import ProductPage from "./ProductPage.jsx";
+import ProductPage, { ProductForm } from "./ProductPage.jsx";
 import { readApiResponse } from "./api.js";
 
 const filters = ["All invoices", "Paid", "Pending", "Overdue"];
@@ -173,7 +174,7 @@ function AuthScreen({ onAuthenticated }) {
   );
 }
 
-function InvoiceComposer({ token, user, onClose, onCreated }) {
+function InvoiceComposer({ token, user, onClose, onCreated, onNavigateTo }) {
   const [customers, setCustomers] = useState([]);
   const [products, setProducts] = useState([]);
   const [customerId, setCustomerId] = useState("");
@@ -182,6 +183,7 @@ function InvoiceComposer({ token, user, onClose, onCreated }) {
     return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   });
   const [items, setItems] = useState([{ id: 1, productid: "", buyitem: 1 }]);
+  const [showProductForm, setShowProductForm] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -237,6 +239,26 @@ function InvoiceComposer({ token, user, onClose, onCreated }) {
     setItems((current) => current.map((item) => (
       item.id === itemId ? { ...item, [field]: value } : item
     )));
+  }
+
+  function addProductToInvoice(product) {
+    setShowProductForm(false);
+    if (Number(product.quantity) < 1 || product.archived) {
+      setError("Product was saved, but it needs in-stock quantity before it can be invoiced.");
+      return;
+    }
+
+    setError("");
+    setProducts((current) => [...current, product]);
+    setItems((current) => {
+      const emptyRowIndex = current.findIndex((item) => !item.productid);
+      if (emptyRowIndex >= 0) {
+        return current.map((item, index) => index === emptyRowIndex
+          ? { ...item, productid: String(product.productid) }
+          : item);
+      }
+      return [...current, { id: Date.now(), productid: String(product.productid), buyitem: 1 }];
+    });
   }
 
   async function submitInvoice(event) {
@@ -301,7 +323,13 @@ function InvoiceComposer({ token, user, onClose, onCreated }) {
         {loading ? <p className="invoice-form-state">Loading customers and products…</p> : (
           <form onSubmit={submitInvoice}>
             {(customers.length === 0 || products.length === 0) && !error && (
-              <p className="invoice-form-state">Add at least one customer and one in-stock product before creating an invoice.</p>
+              <div className="invoice-form-state">
+                <p>Add at least one customer and one in-stock product before creating an invoice.</p>
+                <div className="invoice-setup-actions">
+                  {customers.length === 0 && <button type="button" onClick={() => onNavigateTo("customers")}><UsersRound size={15} />Add customers</button>}
+                  {products.length === 0 && <button type="button" onClick={() => setShowProductForm(true)}><Package size={15} />Create a product</button>}
+                </div>
+              </div>
             )}
 
             <div className="invoice-form-grid">
@@ -344,7 +372,10 @@ function InvoiceComposer({ token, user, onClose, onCreated }) {
                 );
               })}
             </div>
-            <button className="add-item-button" type="button" onClick={() => setItems((current) => [...current, { id: Date.now(), productid: "", buyitem: 1 }])} disabled={items.length >= products.length}><Plus size={15} />Add product</button>
+            <div className="invoice-item-actions">
+              <button className="add-item-button" type="button" onClick={() => setItems((current) => [...current, { id: Date.now(), productid: "", buyitem: 1 }])} disabled={items.length >= products.length}><Plus size={15} />Add product line</button>
+              <button className="add-item-button" type="button" onClick={() => setShowProductForm(true)}><Package size={15} />Create product</button>
+            </div>
 
             <div className="invoice-total-block">
               <div><span>Subtotal</span><strong>{formatCurrency(totals.subtotal)}</strong></div>
@@ -363,6 +394,7 @@ function InvoiceComposer({ token, user, onClose, onCreated }) {
           </form>
         )}
       </section>
+      {showProductForm && <ProductForm token={token} onClose={() => setShowProductForm(false)} onCreated={addProductToInvoice} />}
     </div>
   );
 }
@@ -386,6 +418,7 @@ function App() {
   const [filter, setFilter] = useState("All invoices");
   const [query, setQuery] = useState("");
   const [showInvoiceComposer, setShowInvoiceComposer] = useState(false);
+  const [downloadError, setDownloadError] = useState("");
 
   useEffect(() => {
     if (!session?.token) {
@@ -514,6 +547,16 @@ function App() {
     navigate("invoices");
   }
 
+  async function handleDownloadInvoice(invoice) {
+    try {
+      const { downloadInvoicePdf } = await import("./invoicePdf.js");
+      downloadInvoicePdf(invoice, session.user);
+      setDownloadError("");
+    } catch (downloadFailure) {
+      setDownloadError(downloadFailure.message || "Could not download invoice PDF.");
+    }
+  }
+
   if (!authReady) {
     return <main className="auth-loading" aria-live="polite">Loading your workspace…</main>;
   }
@@ -616,6 +659,7 @@ function App() {
               </div>
               <label className="search-field"><Search size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search invoices" aria-label="Search invoices" /></label>
             </div>
+            {downloadError && <p className="auth-error product-page-error" role="alert">{downloadError}</p>}
 
             <div className="table-wrap">
               <table>
@@ -633,7 +677,7 @@ function App() {
                         <td className="date-cell">{formatDate(invoice.invoicedate)}</td>
                         <td className="amount-cell">{formatCurrency(invoice.totalamount)}</td>
                         <td><span className={`status-pill status-${status.toLowerCase()}`}><span />{status}</span></td>
-                        <td><button className="row-action" aria-label={`Open invoice ${invoice.invoiceid}`}><ArrowUpRight size={16} /></button></td>
+                        <td><button className="row-action" onClick={() => handleDownloadInvoice(invoice)} aria-label={`Download invoice ${invoice.invoiceid} as PDF`} title="Download PDF"><Download size={16} /></button></td>
                       </tr>
                     );
                   })}
@@ -651,6 +695,7 @@ function App() {
           user={session.user}
           onClose={() => setShowInvoiceComposer(false)}
           onCreated={handleInvoiceCreated}
+          onNavigateTo={(view) => { setShowInvoiceComposer(false); navigate(view); }}
         />
       )}
     </div>

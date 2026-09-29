@@ -13,7 +13,7 @@ const createProduct = async (req,res) =>
             ownerid: req.user.userid,
             gst: {
                 ...req.body.gst,
-                gsttype: req.body.gst?.gsttype || "CGST",
+                gsttype: "CGST+SGST",
                 gstin: req.user.gstin || req.body.gst?.gstin
             }
         };
