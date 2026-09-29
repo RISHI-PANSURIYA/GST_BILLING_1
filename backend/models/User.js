@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
 
 const userSchema = new mongoose.Schema(
     {
@@ -21,6 +22,32 @@ const userSchema = new mongoose.Schema(
             maxlength: [100, "Name cannot exceed 100 characters"]
         },
 
+        businessName: {
+            type: String,
+            trim: true,
+            minlength: [2, "Business name must be at least 2 characters"],
+            maxlength: [150, "Business name cannot exceed 150 characters"]
+        },
+
+        gstin: {
+            type: String,
+            trim: true,
+            uppercase: true,
+            minlength: [15, "GSTIN must be exactly 15 characters"],
+            maxlength: [15, "GSTIN must be exactly 15 characters"],
+            match: [
+                /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/,
+                "Please enter a valid GSTIN"
+            ]
+        },
+
+        address: {
+            type: String,
+            trim: true,
+            minlength: [5, "Business address must be at least 5 characters"],
+            maxlength: [300, "Business address cannot exceed 300 characters"]
+        },
+
         email: {
             type: String,
             required: [true, "Email is required"],
@@ -37,7 +64,8 @@ const userSchema = new mongoose.Schema(
             type: String,
             required: [true, "Password is required"],
             minlength: [6, "Password must be at least 6 characters"],
-            maxlength: [100, "Password cannot exceed 100 characters"]
+            maxlength: [100, "Password cannot exceed 100 characters"],
+            select: false
         },
 
         phone_no: {
@@ -57,13 +85,30 @@ const userSchema = new mongoose.Schema(
                 message: "Role must be Admin or User"
             },
             default: "User"
+        },
+
+        tokenVersion: {
+            type: Number,
+            default: 0
         }
     },
     {
         collection: "User",
-        timestamps: true
+        timestamps: true,
+        toJSON: {
+            transform(_document, value) {
+                delete value.password;
+                return value;
+            }
+        }
     }
 );
+
+userSchema.pre("save", async function () {
+    if (this.isModified("password")) {
+        this.password = await bcrypt.hash(this.password, 12);
+    }
+});
 
 const User = mongoose.model("User", userSchema);
 

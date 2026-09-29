@@ -3,9 +3,18 @@ const InvoiceRepository = require("../repositories/InvoiceRepository");
 
 exports.createInvoice = async (req, res) => {
     try {
+        const invoiceData = {
+            ...req.body,
+            user: {
+                userid: req.user.userid,
+                name: req.user.name,
+                email: req.user.email
+            }
+        };
+
         const result =
             await InvoiceRepository.createInvoice(
-                req.body
+                invoiceData
             );
 
         res.status(201).json({
@@ -26,7 +35,8 @@ exports.getInvoiceById = async (req, res) => {
     try {
         const invoice =
             await InvoiceRepository.getInvoiceById(
-                req.params.id
+                req.params.id,
+                req.user.userid
             );
 
         res.status(200).json({
@@ -56,7 +66,9 @@ exports.getInvoiceById = async (req, res) => {
 exports.getAllInvoices = async (req, res) => {
     try {
         const invoices =
-            await InvoiceRepository.getAllInvoices();
+            await InvoiceRepository.getAllInvoices(
+                req.user.userid
+            );
 
         res.status(200).json({
             success: true,
@@ -75,7 +87,8 @@ exports.getInvoicesByCustomer = async (req, res) => {
     try {
         const invoices =
             await InvoiceRepository.getInvoicesByCustomer(
-                req.params.customerId
+                req.params.customerId,
+                req.user.userid
             );
 
         res.status(200).json({
@@ -93,10 +106,20 @@ exports.getInvoicesByCustomer = async (req, res) => {
 
 exports.updateInvoice = async (req, res) => {
     try {
+        const updateData = {
+            ...req.body,
+            user: {
+                userid: req.user.userid,
+                name: req.user.name,
+                email: req.user.email
+            }
+        };
+
         const result =
             await InvoiceRepository.updateInvoice(
                 req.params.id,
-                req.body
+                updateData,
+                req.user.userid
             );
 
         res.status(200).json({
@@ -128,7 +151,8 @@ exports.deleteInvoice = async (req, res) => {
     try {
         const result =
             await InvoiceRepository.deleteInvoice(
-                req.params.id
+                req.params.id,
+                req.user.userid
             );
 
         res.status(200).json({

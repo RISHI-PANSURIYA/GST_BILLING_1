@@ -24,8 +24,8 @@ const gstSchema = new mongoose.Schema(
             type: String,
             required: [true, "GST type is required"],
             enum: {
-                values: ["CGST", "SGST", "IGST"],
-                message: "GST type must be CGST, SGST or IGST"
+                values: ["CGST", "SGST", "IGST", "CGST+SGST"],
+                message: "GST type must be CGST, SGST, IGST or CGST+SGST"
             },
             trim: true
         },
@@ -33,7 +33,6 @@ const gstSchema = new mongoose.Schema(
         gstin: {
             type: String,
             required: [true, "GSTIN is required"],
-            unique: true,
             trim: true,
             uppercase: true,
             minlength: [15, "GSTIN must be exactly 15 characters"],
@@ -48,6 +47,11 @@ const gstSchema = new mongoose.Schema(
         collection: "GST",
         timestamps: true
     }
+);
+
+gstSchema.index(
+    { gstin: 1, gsttype: 1, gstrate: 1 },
+    { unique: true }
 );
 
 const GST = mongoose.model("GST", gstSchema);

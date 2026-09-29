@@ -50,10 +50,13 @@ const createUser = async (userData) => {
         const user = await User.create({
             userid: userid,
             name: userData.name,
+            businessName: userData.businessName,
+            gstin: userData.gstin,
+            address: userData.address,
             email: userData.email,
             password: userData.password,
             phone_no: userData.phone_no,
-            role: userData.role || "User"
+            role: "User"
         });
 
         return user.toJSON();

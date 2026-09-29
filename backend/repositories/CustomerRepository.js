@@ -23,14 +23,14 @@ const createCustomer = async (customerData) => {
         if (
             !customerData.name ||
             !customerData.email ||
-            !customerData.password ||
             !customerData.phone_no
         ) {
             throw new Error("Missing required fields");
         }
 
         const existingEmail = await Customer.findOne({
-            email: customerData.email
+            email: customerData.email,
+            ownerid: Number(customerData.ownerid)
         });
 
         if (existingEmail) {
@@ -38,7 +38,8 @@ const createCustomer = async (customerData) => {
         }
 
         const existingPhone = await Customer.findOne({
-            phone_no: customerData.phone_no
+            phone_no: customerData.phone_no,
+            ownerid: Number(customerData.ownerid)
         });
 
         if (existingPhone) {
@@ -49,10 +50,12 @@ const createCustomer = async (customerData) => {
 
         const customer = await Customer.create({
             customerid: customerid,
+            ownerid: Number(customerData.ownerid),
             name: customerData.name,
             email: customerData.email,
-            password: customerData.password,
-            phone_no: customerData.phone_no
+            phone_no: customerData.phone_no,
+            gstin: customerData.gstin,
+            address: customerData.address
         });
 
         return customer.toJSON();
@@ -69,11 +72,11 @@ const createCustomer = async (customerData) => {
 };
 
 
-const getAllCustomers = async () => {
+const getAllCustomers = async (ownerid) => {
 
     try {
 
-        const customers = await Customer.find();
+        const customers = await Customer.find({ ownerid: Number(ownerid) });
 
         return customers;
 
@@ -89,12 +92,13 @@ const getAllCustomers = async () => {
 };
 
 
-const getCustomerById = async (id) => {
+const getCustomerById = async (id, ownerid) => {
 
     try {
 
         const customer = await Customer.findOne({
-            customerid: Number(id)
+            customerid: Number(id),
+            ownerid: Number(ownerid)
         });
 
         if (!customer) {
@@ -117,12 +121,13 @@ const getCustomerById = async (id) => {
 };
 
 
-const updateCustomer = async (id, updateData) => {
+const updateCustomer = async (id, updateData, ownerid) => {
 
     try {
 
         const customer = await Customer.findOne({
-            customerid: Number(id)
+            customerid: Number(id),
+            ownerid: Number(ownerid)
         });
 
         if (!customer) {
@@ -141,7 +146,8 @@ const updateCustomer = async (id, updateData) => {
 
             const existingEmail = await Customer.findOne({
                 email: updateData.email,
-                customerid: { $ne: customer.customerid }
+                customerid: { $ne: customer.customerid },
+                ownerid: Number(ownerid)
             });
 
             if (existingEmail) {
@@ -164,7 +170,8 @@ const updateCustomer = async (id, updateData) => {
 
             const existingPhone = await Customer.findOne({
                 phone_no: updateData.phone_no,
-                customerid: { $ne: customer.customerid }
+                customerid: { $ne: customer.customerid },
+                ownerid: Number(ownerid)
             });
 
             if (existingPhone) {
@@ -174,6 +181,18 @@ const updateCustomer = async (id, updateData) => {
             }
 
             customer.phone_no = updateData.phone_no;
+
+        }
+
+        if (updateData.gstin !== undefined) {
+
+            customer.gstin = updateData.gstin;
+
+        }
+
+        if (updateData.address !== undefined) {
+
+            customer.address = updateData.address;
 
         }
 
@@ -193,12 +212,13 @@ const updateCustomer = async (id, updateData) => {
 };
 
 
-const deleteCustomer = async (id) => {
+const deleteCustomer = async (id, ownerid) => {
 
     try {
 
         const customer = await Customer.findOneAndDelete({
-            customerid: Number(id)
+            customerid: Number(id),
+            ownerid: Number(ownerid)
         });
 
         if (!customer) {

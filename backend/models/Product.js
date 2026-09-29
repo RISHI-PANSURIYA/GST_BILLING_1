@@ -13,6 +13,11 @@ const productSchema = new mongoose.Schema(
             }
         },
 
+        ownerid: {
+            type: Number,
+            index: true
+        },
+
         productname: {
             type: String,
             required: [true, "Product name is required"],
@@ -63,8 +68,8 @@ const productSchema = new mongoose.Schema(
                 required: [true, "GST type is required"],
                 trim: true,
                 enum: {
-                    values: ["CGST", "SGST", "IGST"],
-                    message: "GST type must be CGST, SGST or IGST"
+                    values: ["CGST", "SGST", "IGST", "CGST+SGST"],
+                    message: "GST type must be CGST, SGST, IGST or CGST+SGST"
                 }
             },
 

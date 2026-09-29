@@ -2,9 +2,18 @@ const CustomerRepository = require("../repositories/CustomerRepository");
 
 const createCustomer = async (req, res) => {
 
+    if (!req.body.gstin || !req.body.address) {
+        return res.status(400).json({
+            error: "Customer GSTIN and address are required"
+        });
+    }
+
     try {
 
-        const customer = await CustomerRepository.createCustomer(req.body);
+        const customer = await CustomerRepository.createCustomer({
+            ...req.body,
+            ownerid: req.user.userid
+        });
 
         res.status(201).json(customer);
 
@@ -20,7 +29,7 @@ const getAllCustomers = async (req, res) => {
 
     try {
 
-        const customers = await CustomerRepository.getAllCustomers();
+        const customers = await CustomerRepository.getAllCustomers(req.user.userid);
 
         res.status(200).json(customers);
 
@@ -36,7 +45,7 @@ const getCustomerById = async (req, res) => {
 
     try {
 
-        const customer = await CustomerRepository.getCustomerById(req.params.id);
+        const customer = await CustomerRepository.getCustomerById(req.params.id, req.user.userid);
 
         if (!customer) {
 
@@ -62,7 +71,8 @@ const updateCustomer = async (req, res) => {
 
         const customer = await CustomerRepository.updateCustomer(
             req.params.id,
-            req.body
+            req.body,
+            req.user.userid
         );
 
         if (!customer) {
@@ -87,7 +97,7 @@ const deleteCustomer = async (req, res) => {
 
     try {
 
-        const result = await CustomerRepository.deleteCustomer(req.params.id);
+        const result = await CustomerRepository.deleteCustomer(req.params.id, req.user.userid);
 
         if (!result) {
 

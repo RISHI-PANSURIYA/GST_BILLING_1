@@ -8,7 +8,17 @@ const createProduct = async (req,res) =>
 
     {
 
-        const product= await ProductRepository.createProduct(req.body);
+        const productData = {
+            ...req.body,
+            ownerid: req.user.userid,
+            gst: {
+                ...req.body.gst,
+                gsttype: req.body.gst?.gsttype || "CGST",
+                gstin: req.user.gstin || req.body.gst?.gstin
+            }
+        };
+
+        const product= await ProductRepository.createProduct(productData);
 
         res.status(201).json(product);
 
@@ -32,7 +42,7 @@ const getAllProducts = async (req,res)=> {
 
     try{
 
-        const products = await ProductRepository.getAllProducts();
+        const products = await ProductRepository.getAllProducts(req.user.userid);
 
         res.status(200).json(products);
 
@@ -50,7 +60,7 @@ const getProductById = async (req,res)=>{
 
     try{
 
-        const product = await ProductRepository.getProductById(req.params.id);
+        const product = await ProductRepository.getProductById(req.params.id, req.user.userid);
 
         if (!product) {
 
@@ -78,9 +88,22 @@ const updateProduct = async (req,res) =>
 
     try{
 
+        const productData = {
+            ...req.body,
+            ownerid: req.user.userid,
+            ...(req.body.gst && {
+                gst: {
+                    ...req.body.gst,
+                    gsttype: "CGST+SGST",
+                    gstin: req.user.gstin
+                }
+            })
+        };
+
         const product= await ProductRepository.updateProduct(
             req.params.id,
-            req.body
+            productData,
+            req.user.userid
         );
 
         if (!product) {
@@ -109,7 +132,7 @@ const deleteProduct = async (req,res) =>
 
     try{
 
-        const product = await ProductRepository.deleteProduct(req.params.id);
+        const product = await ProductRepository.deleteProduct(req.params.id, req.user.userid);
 
         if (!product) {
 

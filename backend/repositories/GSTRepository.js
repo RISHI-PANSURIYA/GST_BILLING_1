@@ -29,11 +29,13 @@ const createGST = async (gstData) => {
         }
 
         const existingGSTIN = await GST.findOne({
-            gstin: gstData.gstin
+            gstin: gstData.gstin,
+            gsttype: gstData.gsttype,
+            gstrate: Number(gstData.gstrate)
         });
 
         if (existingGSTIN) {
-            throw new Error("GSTIN already exists");
+            throw new Error("This GSTIN, type, and rate combination already exists");
         }
 
         const gstid = await getNextGSTId();
@@ -137,12 +139,14 @@ const updateGST = async (id, gstData) => {
 
             const existingGSTIN = await GST.findOne({
                 gstin: gstData.gstin,
+                gsttype: gstData.gsttype ?? gst.gsttype,
+                gstrate: Number(gstData.gstrate ?? gst.gstrate),
                 gstid: { $ne: gst.gstid }
             });
 
             if (existingGSTIN) {
 
-                throw new Error("GSTIN already exists");
+                throw new Error("This GSTIN, type, and rate combination already exists");
 
             }
 

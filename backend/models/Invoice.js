@@ -49,6 +49,24 @@ const invoiceSchema = new mongoose.Schema(
                     /^[6-9]\d{9}$/,
                     "Customer phone number must be a valid 10-digit Indian number"
                 ]
+            },
+
+            gstin: {
+                type: String,
+                trim: true,
+                uppercase: true,
+                minlength: [15, "Customer GSTIN must be exactly 15 characters"],
+                maxlength: [15, "Customer GSTIN must be exactly 15 characters"],
+                match: [
+                    /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/,
+                    "Please enter a valid customer GSTIN"
+                ]
+            },
+
+            address: {
+                type: String,
+                trim: true,
+                maxlength: [300, "Customer address cannot exceed 300 characters"]
             }
         },
 
@@ -161,8 +179,8 @@ const invoiceSchema = new mongoose.Schema(
                             required: [true, "GST type is required"],
                             trim: true,
                             enum: {
-                                values: ["CGST", "SGST", "IGST"],
-                                message: "GST type must be CGST, SGST or IGST"
+                                values: ["CGST", "SGST", "IGST", "CGST+SGST"],
+                                message: "GST type must be CGST, SGST, IGST or CGST+SGST"
                             }
                         },
 

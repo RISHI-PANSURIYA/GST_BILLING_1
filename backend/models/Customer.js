@@ -11,6 +11,10 @@ const customerSchema = new mongoose.Schema(
                 message: "Customer ID must be an integer"
             }
         },
+        ownerid: {
+            type: Number,
+            index: true
+        },
         name: {
             type: String,
             required: [true, "Customer name is required"],
@@ -21,7 +25,6 @@ const customerSchema = new mongoose.Schema(
         email: {
             type: String,
             required: [true, "Email is required"],
-            unique: true,
             trim: true,
             lowercase: true,
             match: [
@@ -31,25 +34,50 @@ const customerSchema = new mongoose.Schema(
         },
         password: {
             type: String,
-            required: [true, "Password is required"],
             minlength: [6, "Password must be at least 6 characters"],
-            maxlength: [100, "Password cannot exceed 100 characters"]
+            maxlength: [100, "Password cannot exceed 100 characters"],
+            select: false
         },
         phone_no: {
             type: String,
             required: [true, "Phone number is required"],
-            unique: true,
             trim: true,
             match: [
                 /^[6-9]\d{9}$/,
                 "Phone number must be a valid 10-digit Indian mobile number"
             ]
+        },
+        gstin: {
+            type: String,
+            trim: true,
+            uppercase: true,
+            minlength: [15, "GSTIN must be exactly 15 characters"],
+            maxlength: [15, "GSTIN must be exactly 15 characters"],
+            match: [
+                /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/,
+                "Please enter a valid GSTIN"
+            ]
+        },
+        address: {
+            type: String,
+            trim: true,
+            minlength: [5, "Address must be at least 5 characters"],
+            maxlength: [300, "Address cannot exceed 300 characters"]
         }
     },
     {
         collection: "Customer",
-        timestamps: true
+        timestamps: true,
+        toJSON: {
+            transform(_document, value) {
+                delete value.password;
+                return value;
+            }
+        }
     }
 );
+
+customerSchema.index({ ownerid: 1, email: 1 }, { unique: true });
+customerSchema.index({ ownerid: 1, phone_no: 1 }, { unique: true });
 const Customer = mongoose.model("Customer", customerSchema);
 module.exports = Customer;

@@ -184,18 +184,21 @@ const findSameUser = async (
 };
 
 const findSameCustomer = async (
-    data
+    data,
+    ownerid
 ) => {
     if (!data) {
         return null;
     }
 
-    const customers =
-        await Customer.find({
-            name: data.name,
-            email: data.email,
-            phone_no: data.phone_no
-        });
+    const query = {
+        name: data.name,
+        email: data.email,
+        phone_no: data.phone_no
+    };
+    if (ownerid !== undefined) query.ownerid = Number(ownerid);
+
+    const customers = await Customer.find(query);
 
     for (
         const customer
@@ -249,25 +252,21 @@ const findSameGST = async (
 };
 
 const findSameProduct = async (
-    data
+    data,
+    ownerid
 ) => {
     if (!data) {
         return null;
     }
 
-    const products =
-        await Product.find({
-            productname:
-                data.productname,
+    const query = {
+        productname: data.productname,
+        price: Number(data.price),
+        hsncode: data.hsncode
+    };
+    if (ownerid !== undefined) query.ownerid = Number(ownerid);
 
-            price:
-                Number(
-                    data.price
-                ),
-
-            hsncode:
-                data.hsncode
-        });
+    const products = await Product.find(query);
 
     for (
         const product
@@ -391,7 +390,8 @@ const getOrCreateUser = async (
 
 const getOrCreateCustomer = async (
     data,
-    warnings = []
+    warnings = [],
+    ownerid
 ) => {
     if (!data) {
         throw new Error(
@@ -413,7 +413,8 @@ const getOrCreateCustomer = async (
         const existingCustomer =
             await Customer.findOne({
                 customerid:
-                    requestedCustomerId
+                    requestedCustomerId,
+                ownerid: Number(ownerid)
             });
 
         if (existingCustomer) {
@@ -432,7 +433,8 @@ const getOrCreateCustomer = async (
         const existingByEmail =
             await Customer.findOne({
                 email:
-                    data.email
+                    data.email,
+                ownerid: Number(ownerid)
             });
 
         if (
@@ -464,7 +466,8 @@ const getOrCreateCustomer = async (
         const existingByPhone =
             await Customer.findOne({
                 phone_no:
-                    data.phone_no
+                    data.phone_no,
+                ownerid: Number(ownerid)
             });
 
         if (
@@ -492,7 +495,8 @@ const getOrCreateCustomer = async (
 
     const sameCustomer =
         await findSameCustomer(
-            data
+            data,
+            ownerid
         );
 
     if (sameCustomer) {
@@ -506,7 +510,7 @@ const getOrCreateCustomer = async (
 
     const createdCustomer =
         await CustomerRepository.createCustomer(
-            data
+            { ...data, ownerid: Number(ownerid) }
         );
 
     const customer =
@@ -514,7 +518,8 @@ const getOrCreateCustomer = async (
             customerid:
                 Number(
                     createdCustomer.customerid
-                )
+                ),
+            ownerid: Number(ownerid)
         });
 
     if (!customer) {
@@ -568,30 +573,18 @@ const getOrCreateGST = async (
     ) {
         const existingByGSTIN =
             await GST.findOne({
-                gstin:
-                    data.gstin
+                gstin: data.gstin,
+                gsttype: data.gsttype,
+                gstrate: Number(data.gstrate)
             });
 
         if (
             existingByGSTIN
         ) {
-            if (
-                isSameGST(
-                    existingByGSTIN,
-                    data
-                )
-            ) {
-                addWarning(
-                    warnings,
-                    `GST ID ${requestedGSTId ?? "new"} does not exist, but the same GST data already exists as GST ${existingByGSTIN.gstid}. Existing GST was used and JSON GST data was ignored.`
-                );
-            } else {
-                addWarning(
-                    warnings,
-                    `GST ID ${requestedGSTId ?? "new"} does not exist, but GSTIN ${data.gstin} already belongs to GST ${existingByGSTIN.gstid}. Existing GST data from database was used and JSON GST data was ignored.`
-                );
-            }
-
+            addWarning(
+                warnings,
+                `GST ID ${requestedGSTId ?? "new"} does not exist, but the same GST data already exists as GST ${existingByGSTIN.gstid}. Existing GST was used and JSON GST data was ignored.`
+            );
             return existingByGSTIN;
         }
     }
@@ -629,7 +622,8 @@ const getOrCreateGST = async (
 
 const getOrCreateProduct = async (
     item,
-    warnings = []
+    warnings = [],
+    ownerid
 ) => {
     const productData =
         item.product;
@@ -659,7 +653,8 @@ const getOrCreateProduct = async (
         const existingProduct =
             await Product.findOne({
                 productid:
-                    requestedProductId
+                    requestedProductId,
+                ownerid: Number(ownerid)
             });
 
         if (existingProduct) {
@@ -674,7 +669,8 @@ const getOrCreateProduct = async (
 
     const sameProduct =
         await findSameProduct(
-            productData
+            productData,
+            ownerid
         );
 
     if (sameProduct) {
@@ -719,6 +715,9 @@ const getOrCreateProduct = async (
             hsncode:
                 productData.hsncode,
 
+            ownerid:
+                Number(ownerid),
+
             gst: {
                 gstid:
                     gst.gstid,
@@ -739,7 +738,8 @@ const getOrCreateProduct = async (
             productid:
                 Number(
                     createdProduct.productid
-                )
+                ),
+            ownerid: Number(ownerid)
         });
 
     if (!product) {
@@ -753,14 +753,16 @@ const getOrCreateProduct = async (
 
 const resolveProductAndGST = async (
     item,
-    warnings = []
+    warnings = [],
+    ownerid
 ) => {
     let product =
         await Product.findOne({
             productid:
                 Number(
                     item.productid
-                )
+                ),
+            ownerid: Number(ownerid)
         });
 
     if (product) {
@@ -786,7 +788,8 @@ const resolveProductAndGST = async (
     product =
         await getOrCreateProduct(
             item,
-            warnings
+            warnings,
+            ownerid
         );
 
     const gst =
@@ -855,14 +858,15 @@ const getGSTForExistingProduct = async (
 
     gst =
         await GST.findOne({
-            gstin:
-                productGST.gstin
+            gstin: productGST.gstin,
+            gsttype: productGST.gsttype,
+            gstrate: Number(productGST.gstrate)
         });
 
     if (gst) {
         addWarning(
             warnings,
-            `GST ${productGST.gstid} for Product ${product.productid} was not found by ID, but GSTIN belongs to GST ${gst.gstid}. Existing GST was used.`
+            `GST ${productGST.gstid} for Product ${product.productid} was not found by ID, but the matching GST record ${gst.gstid} was used.`
         );
 
         return gst;
@@ -953,7 +957,8 @@ const createInvoice = async (
         const customer =
             await getOrCreateCustomer(
                 invoiceData.customer,
-                warnings
+                warnings,
+                user.userid
             );
 
         const items = [];
@@ -1021,7 +1026,8 @@ const createInvoice = async (
             } =
                 await resolveProductAndGST(
                     item,
-                    warnings
+                    warnings,
+                    user.userid
                 );
 
             if (
@@ -1145,7 +1151,12 @@ const createInvoice = async (
                         customer.email,
 
                     phone_no:
-                        customer.phone_no
+                        customer.phone_no,
+
+                    gstin:
+                        customer.gstin,
+                    address:
+                        customer.address
                 },
 
                 user: {
@@ -1234,9 +1245,9 @@ const createInvoice = async (
     }
 };
 
-const getAllInvoices = async () => {
+const getAllInvoices = async (userId) => {
     try {
-        return await Invoice.find();
+        return await Invoice.find({ "user.userid": Number(userId) });
     } catch (error) {
         throw new Error(
             "Error retrieving invoices: " +
@@ -1246,13 +1257,15 @@ const getAllInvoices = async () => {
 };
 
 const getInvoiceById = async (
-    id
+    id,
+    userId
 ) => {
     try {
         const invoice =
             await Invoice.findOne({
                 invoiceid:
-                    Number(id)
+                    Number(id),
+                "user.userid": Number(userId)
             });
 
         if (!invoice) {
@@ -1271,12 +1284,14 @@ const getInvoiceById = async (
 };
 
 const getInvoicesByCustomer = async (
-    customerId
+    customerId,
+    userId
 ) => {
     try {
         return await Invoice.find({
             "customer.customerid":
-                Number(customerId)
+                Number(customerId),
+            "user.userid": Number(userId)
         });
     } catch (error) {
         throw new Error(
@@ -1289,7 +1304,8 @@ const getInvoicesByCustomer = async (
 const resolveCustomerForUpdate = async (
     customerData,
     currentCustomerId,
-    warnings
+    warnings,
+    ownerid
 ) => {
     if (!customerData) {
         throw new Error(
@@ -1312,7 +1328,8 @@ const resolveCustomerForUpdate = async (
         const existingCustomer =
             await Customer.findOne({
                 customerid:
-                    requestedCustomerId
+                    requestedCustomerId,
+                ownerid: Number(ownerid)
             });
 
         if (existingCustomer) {
@@ -1327,7 +1344,8 @@ const resolveCustomerForUpdate = async (
 
     const sameCustomer =
         await findSameCustomer(
-            customerData
+            customerData,
+            ownerid
         );
 
     if (sameCustomer) {
@@ -1345,7 +1363,8 @@ const resolveCustomerForUpdate = async (
         const existingByEmail =
             await Customer.findOne({
                 email:
-                    customerData.email
+                    customerData.email,
+                ownerid: Number(ownerid)
             });
 
         if (
@@ -1363,7 +1382,8 @@ const resolveCustomerForUpdate = async (
         const existingByPhone =
             await Customer.findOne({
                 phone_no:
-                    customerData.phone_no
+                    customerData.phone_no,
+                ownerid: Number(ownerid)
             });
 
         if (
@@ -1386,7 +1406,8 @@ const resolveCustomerForUpdate = async (
                     customerid:
                         Number(
                             currentCustomerId
-                        )
+                        ),
+                    ownerid: Number(ownerid)
                 })
                 : null;
 
@@ -1405,7 +1426,7 @@ const resolveCustomerForUpdate = async (
 
     const createdCustomer =
         await CustomerRepository.createCustomer(
-            customerData
+            { ...customerData, ownerid: Number(ownerid) }
         );
 
     const customer =
@@ -1413,7 +1434,8 @@ const resolveCustomerForUpdate = async (
             customerid:
                 Number(
                     createdCustomer.customerid
-                )
+                ),
+            ownerid: Number(ownerid)
         });
 
     if (!customer) {
@@ -1427,13 +1449,15 @@ const resolveCustomerForUpdate = async (
 
 const updateInvoice = async (
     id,
-    updateData
+    updateData,
+    userId
 ) => {
     try {
         const invoice =
             await Invoice.findOne({
                 invoiceid:
-                    Number(id)
+                    Number(id),
+                "user.userid": Number(userId)
             });
 
         if (!invoice) {
@@ -1489,7 +1513,8 @@ const updateInvoice = async (
                 await resolveCustomerForUpdate(
                     updateData.customer,
                     invoice.customer.customerid,
-                    warnings
+                    warnings,
+                    userId
                 );
 
             invoice.customer = {
@@ -1504,6 +1529,11 @@ const updateInvoice = async (
 
                 phone_no:
                     customer.phone_no
+                ,
+                gstin:
+                    customer.gstin,
+                address:
+                    customer.address
             };
         }
 
@@ -1589,7 +1619,8 @@ const updateInvoice = async (
                         productid:
                             Number(
                                 oldItem.productid
-                            )
+                                ),
+                            ownerid: Number(userId)
                     });
 
                 if (oldProduct) {
@@ -1618,7 +1649,8 @@ const updateInvoice = async (
                 } =
                     await resolveProductAndGST(
                         item,
-                        warnings
+                        warnings,
+                        userId
                     );
 
                 if (
@@ -1834,13 +1866,15 @@ const updateInvoice = async (
 };
 
 const deleteInvoice = async (
-    id
+    id,
+    userId
 ) => {
     try {
         const invoice =
             await Invoice.findOne({
                 invoiceid:
-                    Number(id)
+                    Number(id),
+                "user.userid": Number(userId)
             });
 
         if (!invoice) {
@@ -1858,7 +1892,8 @@ const deleteInvoice = async (
                     productid:
                         Number(
                             item.productid
-                        )
+                            ),
+                        ownerid: Number(invoice.user.userid)
                 });
 
             if (product) {

@@ -51,7 +51,9 @@ const getOrCreateGST = async (gstData) => {
 
     if (!gst) {
         gst = await GST.findOne({
-            gstin: gstData.gstin
+            gstin: gstData.gstin,
+            gsttype: gstData.gsttype,
+            gstrate: Number(gstData.gstrate)
         });
     }
 
@@ -97,6 +99,7 @@ const createProduct = async (productdata) => {
             hsncode: productdata.hsncode,
 
             quantity: productdata.quantity,
+                ownerid: Number(productdata.ownerid),
 
             gst: {
                 gstid: gst.gstid,
@@ -116,9 +119,9 @@ const createProduct = async (productdata) => {
     }
 };
 
-const getAllProducts = async () => {
+const getAllProducts = async (ownerid) => {
     try {
-        const products = await Product.find();
+        const products = await Product.find({ ownerid: Number(ownerid) });
 
         return products;
 
@@ -130,10 +133,11 @@ const getAllProducts = async () => {
     }
 };
 
-const getProductById = async (id) => {
+const getProductById = async (id, ownerid) => {
     try {
         const product = await Product.findOne({
-            productid: Number(id)
+            productid: Number(id),
+            ownerid: Number(ownerid)
         });
 
         if (!product) {
@@ -150,10 +154,11 @@ const getProductById = async (id) => {
     }
 };
 
-const updateProduct = async (id, updateData) => {
+const updateProduct = async (id, updateData, ownerid) => {
     try {
         const product = await Product.findOne({
-            productid: Number(id)
+            productid: Number(id),
+            ownerid: Number(ownerid)
         });
 
         if (!product) {
@@ -205,10 +210,11 @@ const updateProduct = async (id, updateData) => {
     }
 };
 
-const deleteProduct = async (id) => {
+const deleteProduct = async (id, ownerid) => {
     try {
         const product = await Product.findOneAndDelete({
-            productid: Number(id)
+            productid: Number(id),
+            ownerid: Number(ownerid)
         });
 
         if (!product) {
