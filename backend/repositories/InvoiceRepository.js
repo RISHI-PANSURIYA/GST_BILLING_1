@@ -262,7 +262,8 @@ const findSameProduct = async (
     const query = {
         productname: data.productname,
         price: Number(data.price),
-        hsncode: data.hsncode
+        hsncode: data.hsncode,
+        archived: { $ne: true }
     };
     if (ownerid !== undefined) query.ownerid = Number(ownerid);
 
@@ -654,7 +655,8 @@ const getOrCreateProduct = async (
             await Product.findOne({
                 productid:
                     requestedProductId,
-                ownerid: Number(ownerid)
+                ownerid: Number(ownerid),
+                archived: { $ne: true }
             });
 
         if (existingProduct) {
@@ -762,7 +764,8 @@ const resolveProductAndGST = async (
                 Number(
                     item.productid
                 ),
-            ownerid: Number(ownerid)
+            ownerid: Number(ownerid),
+            archived: { $ne: true }
         });
 
     if (product) {
@@ -1120,6 +1123,7 @@ const createInvoice = async (
                     product.quantity
                 ) -
                 buyitem;
+            product.archived = product.quantity <= 0;
 
             await product.save();
         }
@@ -1631,6 +1635,7 @@ const updateInvoice = async (
                         Number(
                             oldItem.buyitem
                         );
+                    oldProduct.archived = false;
 
                     await oldProduct.save();
                 }
@@ -1747,6 +1752,7 @@ const updateInvoice = async (
                         product.quantity
                     ) -
                     buyitem;
+                product.archived = product.quantity <= 0;
 
                 await product.save();
             }
@@ -1904,6 +1910,7 @@ const deleteInvoice = async (
                     Number(
                         item.buyitem
                     );
+                product.archived = false;
 
                 await product.save();
             }

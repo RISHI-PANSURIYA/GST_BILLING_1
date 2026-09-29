@@ -71,6 +71,10 @@ const connectDB = async () => {
         );
 
         await migrateLegacyOwners();
+        await Product.updateMany(
+            { quantity: { $lte: 0 }, archived: { $ne: true } },
+            { $set: { archived: true } }
+        );
 
         const customerIndexes = await Customer.collection.indexes();
         for (const index of customerIndexes) {

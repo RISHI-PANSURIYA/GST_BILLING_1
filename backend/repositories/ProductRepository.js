@@ -99,7 +99,8 @@ const createProduct = async (productdata) => {
             hsncode: productdata.hsncode,
 
             quantity: productdata.quantity,
-                ownerid: Number(productdata.ownerid),
+            ownerid: Number(productdata.ownerid),
+            archived: Number(productdata.quantity) <= 0,
 
             gst: {
                 gstid: gst.gstid,
@@ -121,7 +122,10 @@ const createProduct = async (productdata) => {
 
 const getAllProducts = async (ownerid) => {
     try {
-        const products = await Product.find({ ownerid: Number(ownerid) });
+        const products = await Product.find({
+            ownerid: Number(ownerid),
+            archived: { $ne: true }
+        });
 
         return products;
 
@@ -137,7 +141,8 @@ const getProductById = async (id, ownerid) => {
     try {
         const product = await Product.findOne({
             productid: Number(id),
-            ownerid: Number(ownerid)
+            ownerid: Number(ownerid),
+            archived: { $ne: true }
         });
 
         if (!product) {
@@ -156,7 +161,7 @@ const getProductById = async (id, ownerid) => {
 
 const updateProduct = async (id, updateData, ownerid) => {
     try {
-        const product = await Product.findOne({
+        const product = await Product.findOneAndDelete({
             productid: Number(id),
             ownerid: Number(ownerid)
         });
@@ -178,6 +183,7 @@ const updateProduct = async (id, updateData, ownerid) => {
         if (updateData.quantity !== undefined) {
             product.quantity =
                 updateData.quantity;
+            product.archived = Number(updateData.quantity) <= 0;
         }
 
         if (updateData.hsncode !== undefined) {
@@ -212,7 +218,7 @@ const updateProduct = async (id, updateData, ownerid) => {
 
 const deleteProduct = async (id, ownerid) => {
     try {
-        const product = await Product.findOneAndDelete({
+        const product = await Product.findOne({
             productid: Number(id),
             ownerid: Number(ownerid)
         });

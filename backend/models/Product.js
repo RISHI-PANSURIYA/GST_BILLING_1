@@ -18,6 +18,12 @@ const productSchema = new mongoose.Schema(
             index: true
         },
 
+        archived: {
+            type: Boolean,
+            default: false,
+            index: true
+        },
+
         productname: {
             type: String,
             required: [true, "Product name is required"],

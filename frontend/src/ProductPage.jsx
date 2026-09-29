@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowUpRight, Boxes, Plus, X } from "lucide-react";
+import { ArrowUpRight, Boxes, Plus, Trash2, X } from "lucide-react";
 import { readApiResponse } from "./api.js";
 
 function formatCurrency(value) {
@@ -75,6 +75,7 @@ export default function ProductPage({ token }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [deletingProductId, setDeletingProductId] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -91,8 +92,30 @@ export default function ProductPage({ token }) {
   }, [token]);
 
   function addProduct(product) {
-    setProducts((current) => [...current, product]);
+    if (Number(product.quantity) > 0 && !product.archived) {
+      setProducts((current) => [...current, product]);
+    }
     setShowForm(false);
+  }
+
+  async function deleteProduct(product) {
+    if (!window.confirm(`Delete ${product.productname} from your products?`)) return;
+
+    setDeletingProductId(product.productid);
+    setError("");
+    try {
+      const response = await fetch(`/api/products/delete/${product.productid}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const result = await readApiResponse(response);
+      if (!response.ok) throw new Error(result.message || result.error || "Could not delete product.");
+      setProducts((current) => current.filter((item) => item.productid !== product.productid));
+    } catch (deleteError) {
+      setError(deleteError.message || "Could not delete product.");
+    } finally {
+      setDeletingProductId(null);
+    }
   }
 
   return (
@@ -103,11 +126,12 @@ export default function ProductPage({ token }) {
       </section>
       <section className="invoice-section entity-list-section">
         <div className="section-heading"><div><h2>All products</h2><p>{products.length} listed {products.length === 1 ? "product" : "products"}</p></div></div>
-        <div className="table-wrap"><table><thead><tr><th>PRODUCT</th><th>HSN</th><th>PRICE</th><th>GST</th><th>IN STOCK</th></tr></thead><tbody>
-          {loading && <tr><td className="table-message" colSpan="5">Loading products…</td></tr>}
-          {!loading && error && <tr><td className="table-message error-message" colSpan="5">{error}</td></tr>}
-          {!loading && !error && products.length === 0 && <tr><td className="table-message" colSpan="5">No products yet. Add a product to use it on invoices.</td></tr>}
-          {!loading && !error && products.map((product) => <tr key={product.productid}><td><span className="customer-name">{product.productname}</span></td><td className="date-cell">{product.hsncode}</td><td className="amount-cell">{formatCurrency(product.price)}</td><td className="date-cell">{product.gst?.gsttype === "CGST+SGST" ? `CGST ${Number(product.gst.gstrate) / 2}% + SGST ${Number(product.gst.gstrate) / 2}%` : `${product.gst?.gsttype} · ${product.gst?.gstrate}%`}</td><td><span className={Number(product.quantity) < 1 ? "stock-empty" : "date-cell"}>{product.quantity}</span></td></tr>)}
+        {error && <p className="auth-error product-page-error" role="alert">{error}</p>}
+        <div className="table-wrap"><table><thead><tr><th>PRODUCT</th><th>HSN</th><th>PRICE</th><th>GST</th><th>IN STOCK</th><th aria-label="Actions" /></tr></thead><tbody>
+          {loading && <tr><td className="table-message" colSpan="6">Loading products…</td></tr>}
+          {!loading && error && products.length === 0 && <tr><td className="table-message error-message" colSpan="6">{error}</td></tr>}
+          {!loading && !error && products.length === 0 && <tr><td className="table-message" colSpan="6">No products yet. Add a product to use it on invoices.</td></tr>}
+          {!loading && products.map((product) => <tr key={product.productid}><td><span className="customer-name">{product.productname}</span></td><td className="date-cell">{product.hsncode}</td><td className="amount-cell">{formatCurrency(product.price)}</td><td className="date-cell">{product.gst?.gsttype === "CGST+SGST" ? `CGST ${Number(product.gst.gstrate) / 2}% + SGST ${Number(product.gst.gstrate) / 2}%` : `${product.gst?.gsttype} · ${product.gst?.gstrate}%`}</td><td><span className={Number(product.quantity) < 1 ? "stock-empty" : "date-cell"}>{product.quantity}</span></td><td><button className="delete-product-button" onClick={() => deleteProduct(product)} disabled={deletingProductId === product.productid} aria-label={`Delete ${product.productname}`} title="Delete product">{deletingProductId === product.productid ? "…" : <Trash2 size={16} />}</button></td></tr>)}
         </tbody></table></div>
         <div className="table-footer"><span>Showing {products.length} products</span><span>Amounts in INR</span></div>
       </section>
